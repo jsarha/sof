@@ -64,6 +64,11 @@ DECLARE_TR_CTX(ll_tr, SOF_UUID(ll_sched_uuid), LOG_LEVEL_INFO);
  *                         +---------+
  */
 
+struct ll_dsp_load {
+	unsigned int cycles_sum;
+	unsigned int checks;
+};
+
 /* one instance of data allocated per core */
 struct ll_schedule_data {
 	struct list_item tasks;			/* list of ll tasks */
@@ -71,6 +76,7 @@ struct ll_schedule_data {
 #if CONFIG_PERFORMANCE_COUNTERS
 	struct perf_cnt_data pcd;
 #endif
+	struct ll_dsp_load dsp_load;
 	struct ll_schedule_domain *domain;	/* scheduling domain */
 };
 
@@ -150,12 +156,38 @@ static void schedule_ll_task_done(struct ll_schedule_data *sch,
 		atomic_read(&sch->domain->total_num_tasks));
 }
 
+/* perf measurement windows size 2^x */
+#define CHECKS_WINDOW_SIZE	10
+
+static inline void dsp_load_check(struct ll_dsp_load *load, uint32_t cycles0, uint32_t cycles1)
+{
+	uint32_t diff, max;
+
+	if (cycles1 > cycles0)
+		diff = cycles1 - cycles0;
+	else
+		diff = UINT32_MAX - cycles0 + cycles1;
+
+	load->cycles_sum += diff;
+
+	if (++load->checks == 1 << CHECKS_WINDOW_SIZE) {
+		load->cycles_sum >>= CHECKS_WINDOW_SIZE;
+		max = clock_us_to_ticks(PLATFORM_DEFAULT_CLOCK, CONFIG_SYSTICK_PERIOD);
+		tr_info(&ll_tr, "ll avg %u/%u", load->cycles_sum, max);
+		load->cycles_sum = 0;
+		load->checks = 0;
+	}
+}
+
 static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 {
 	struct ll_schedule_domain *domain = sch->domain;
+	uint32_t cycles0, cycles1;
 	struct list_item *wlist;
 	struct task *task;
 	k_spinlock_key_t key;
+
+	cycles0 = (uint32_t)platform_timer_get(timer_get());
 
 	/* check each task in the list for pending */
 	wlist = sch->tasks.next;
@@ -200,6 +232,9 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 
 		k_spin_unlock(&domain->lock, key);
 	}
+
+	cycles1 = (uint32_t)platform_timer_get(timer_get());
+	dsp_load_check(&sch->dsp_load, cycles0, cycles1);
 }
 
 static void schedule_ll_client_reschedule(struct ll_schedule_data *sch)

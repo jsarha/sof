@@ -309,6 +309,16 @@ static int eq_fir_setup(struct comp_data *cd, int nch)
 	return 0;
 }
 
+static void *blob_alloc(size_t size)
+{
+	return rballoc(0, SOF_MEM_CAPS_RAM, size);
+}
+
+static void blob_free(void *buf)
+{
+	rfree(buf);
+}
+
 /*
  * End of algorithm code. Next the standard component methods.
  */
@@ -351,7 +361,9 @@ static struct comp_dev *eq_fir_new(const struct comp_driver *drv,
 	cd->fir_delay_size = 0;
 
 	/* component model data handler */
-	cd->model_handler = comp_data_blob_handler_new(dev);
+	cd->model_handler = comp_data_blob_handler_new_ext(dev, true,
+							   blob_alloc,
+							   blob_free);
 	if (!cd->model_handler) {
 		comp_cl_err(&comp_eq_fir, "eq_fir_new(): comp_data_blob_handler_new() failed.");
 		goto cd_fail;
@@ -510,6 +522,14 @@ static int eq_fir_copy(struct comp_dev *dev)
 			comp_err(dev, "eq_fir_copy(), failed FIR setup");
 			return ret;
 		}
+	}
+
+	/* This test is should only fail due to a bug somewhere, but it is
+	 * better to have an error print that a crash.
+	 */
+	if (!comp_is_current_data_blob_valid(cd->model_handler)) {
+		comp_err(dev, "eq_fir_copy(), configuration not valid");
+		return -EBUSY;
 	}
 
 	sinkb = list_first_item(&dev->bsink_list, struct comp_buffer,

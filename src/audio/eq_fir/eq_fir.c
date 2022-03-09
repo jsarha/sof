@@ -35,6 +35,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// HACK
+#undef FIR_MAX_LENGTH_BUILD_SPECIFIC
+
 static const struct comp_driver comp_eq_fir;
 
 /* 43a90ce7-f3a5-41df-ac06-ba98651ae6a3 */
@@ -103,6 +106,12 @@ static inline void set_s32_fir(struct comp_data *cd)
 #endif /* CONFIG_FORMAT_S32LE */
 #endif
 
+//HACK
+static void eq_fir_passthrough(struct fir_state_32x16 fir[],
+			       const struct audio_stream *source,
+			       struct audio_stream *sink,
+			       int frames, int nch);
+
 static inline int set_fir_func(struct comp_dev *dev)
 {
 	struct comp_data *cd = comp_get_drvdata(dev);
@@ -134,6 +143,9 @@ static inline int set_fir_func(struct comp_dev *dev)
 		comp_err(dev, "set_fir_func(), invalid frame_fmt");
 		return -EINVAL;
 	}
+	// HACK
+	cd->eq_fir_func = eq_fir_passthrough;
+
 	return 0;
 }
 

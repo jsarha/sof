@@ -11,6 +11,9 @@
 #include <sof/audio/component.h>
 #include <sof/audio/data_blob.h>
 
+#undef comp_dbg
+#define comp_dbg comp_info
+
 /** \brief Struct handler for large component configs */
 struct comp_data_blob_handler {
 	struct comp_dev *dev;	/**< audio component device */
@@ -92,7 +95,7 @@ bool comp_is_new_data_blob_available(struct comp_data_blob_handler
 {
 	assert(blob_handler);
 
-	comp_dbg(blob_handler->dev, "comp_is_new_data_blob_available()");
+	//comp_dbg(blob_handler->dev, "comp_is_new_data_blob_available()");
 
 	/* New data blob is available when new data blob is allocated (data_new
 	 * is not NULL), and the component has received all required chunks of data

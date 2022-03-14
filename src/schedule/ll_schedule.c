@@ -66,6 +66,7 @@ DECLARE_TR_CTX(ll_tr, SOF_UUID(ll_sched_uuid), LOG_LEVEL_INFO);
 
 struct ll_dsp_load {
 	unsigned int cycles_sum;
+	unsigned int cycles_peak;
 	unsigned int checks;
 };
 
@@ -170,11 +171,16 @@ static inline void dsp_load_check(struct ll_dsp_load *load, uint32_t cycles0, ui
 
 	load->cycles_sum += diff;
 
+	if (load->cycles_peak < diff)
+		load->cycles_peak = diff;
+
 	if (++load->checks == 1 << CHECKS_WINDOW_SIZE) {
 		load->cycles_sum >>= CHECKS_WINDOW_SIZE;
 		max = clock_us_to_ticks(PLATFORM_DEFAULT_CLOCK, CONFIG_SYSTICK_PERIOD);
-		tr_info(&ll_tr, "ll avg %u/%u", load->cycles_sum, max);
+		tr_info(&ll_tr, "ll peak %u avg %u max %u",
+			load->cycles_peak, load->cycles_sum, max);
 		load->cycles_sum = 0;
+		load->cycles_peak = 0;
 		load->checks = 0;
 	}
 }

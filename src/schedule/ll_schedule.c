@@ -64,12 +64,6 @@ DECLARE_TR_CTX(ll_tr, SOF_UUID(ll_sched_uuid), LOG_LEVEL_INFO);
  *                         +---------+
  */
 
-struct ll_dsp_load {
-	unsigned int cycles_sum;
-	unsigned int cycles_peak;
-	unsigned int checks;
-};
-
 /* one instance of data allocated per core */
 struct ll_schedule_data {
 	struct list_item tasks;			/* list of ll tasks */
@@ -77,7 +71,6 @@ struct ll_schedule_data {
 #if CONFIG_PERFORMANCE_COUNTERS
 	struct perf_cnt_data pcd;
 #endif
-	struct ll_dsp_load dsp_load;
 	struct ll_schedule_domain *domain;	/* scheduling domain */
 };
 
@@ -160,28 +153,27 @@ static void schedule_ll_task_done(struct ll_schedule_data *sch,
 /* perf measurement windows size 2^x */
 #define CHECKS_WINDOW_SIZE	10
 
-static inline void dsp_load_check(struct ll_dsp_load *load, uint32_t cycles0, uint32_t cycles1)
+static inline void dsp_load_check(struct task *task, uint32_t cycles0, uint32_t cycles1)
 {
-	uint32_t diff, max;
+	uint32_t diff;
 
 	if (cycles1 > cycles0)
 		diff = cycles1 - cycles0;
 	else
 		diff = UINT32_MAX - cycles0 + cycles1;
 
-	load->cycles_sum += diff;
+	task->cycles_sum += diff;
 
-	if (load->cycles_peak < diff)
-		load->cycles_peak = diff;
+	if (task->cycles_max < diff)
+		task->cycles_max = diff;
 
-	if (++load->checks == 1 << CHECKS_WINDOW_SIZE) {
-		load->cycles_sum >>= CHECKS_WINDOW_SIZE;
-		max = clock_us_to_ticks(PLATFORM_DEFAULT_CLOCK, CONFIG_SYSTICK_PERIOD);
-		tr_info(&ll_tr, "ll peak %u avg %u max %u",
-			load->cycles_peak, load->cycles_sum, max);
-		load->cycles_sum = 0;
-		load->cycles_peak = 0;
-		load->checks = 0;
+	if (++task->cycles_cnt == 1 << CHECKS_WINDOW_SIZE) {
+		task->cycles_sum >>= CHECKS_WINDOW_SIZE;
+		tr_info(&ll_tr, "task %p %pU avg %u, max %u", task, task->uid,
+			task->cycles_sum, task->cycles_max);
+		task->cycles_sum = 0;
+		task->cycles_max = 0;
+		task->cycles_cnt = 0;
 	}
 }
 
@@ -192,8 +184,6 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 	struct list_item *wlist;
 	struct task *task;
 	k_spinlock_key_t key;
-
-	cycles0 = (uint32_t)platform_timer_get(timer_get());
 
 	/* check each task in the list for pending */
 	wlist = sch->tasks.next;
@@ -212,6 +202,8 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 		}
 
 		tr_dbg(&ll_tr, "task %p %pU being started...", task, task->uid);
+
+		cycles0 = (uint32_t)platform_timer_get(timer_get());
 
 		task->state = SOF_TASK_STATE_RUNNING;
 
@@ -237,10 +229,10 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 		}
 
 		k_spin_unlock(&domain->lock, key);
-	}
 
-	cycles1 = (uint32_t)platform_timer_get(timer_get());
-	dsp_load_check(&sch->dsp_load, cycles0, cycles1);
+		cycles1 = (uint32_t)platform_timer_get(timer_get());
+		dsp_load_check(task, cycles0, cycles1);
+	}
 }
 
 static void schedule_ll_client_reschedule(struct ll_schedule_data *sch)

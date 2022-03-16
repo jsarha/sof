@@ -153,6 +153,7 @@ static void schedule_ll_task_done(struct ll_schedule_data *sch,
 /* perf measurement windows size 2^x */
 #define CHECKS_WINDOW_SIZE	10
 
+#ifdef CONFIG_SCHEDULE_LOG_CYCLE_STATISTICS
 static inline void dsp_load_check(struct task *task, uint32_t cycles0, uint32_t cycles1)
 {
 	uint32_t diff;
@@ -176,11 +177,11 @@ static inline void dsp_load_check(struct task *task, uint32_t cycles0, uint32_t 
 		task->cycles_cnt = 0;
 	}
 }
+#endif
 
 static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 {
 	struct ll_schedule_domain *domain = sch->domain;
-	uint32_t cycles0, cycles1;
 	struct list_item *wlist;
 	struct task *task;
 	k_spinlock_key_t key;
@@ -194,6 +195,9 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 	 * a pipeline task terminates a DMIC task.
 	 */
 	while (wlist != &sch->tasks) {
+#ifdef CONFIG_SCHEDULE_LOG_CYCLE_STATISTICS
+		uint32_t cycles0, cycles1;
+#endif
 		task = list_item(wlist, struct task, list);
 
 		if (task->state != SOF_TASK_STATE_PENDING) {
@@ -203,8 +207,9 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 
 		tr_dbg(&ll_tr, "task %p %pU being started...", task, task->uid);
 
+#ifdef CONFIG_SCHEDULE_LOG_CYCLE_STATISTICS
 		cycles0 = (uint32_t)platform_timer_get(timer_get());
-
+#endif
 		task->state = SOF_TASK_STATE_RUNNING;
 
 		/*
@@ -230,8 +235,10 @@ static void schedule_ll_tasks_execute(struct ll_schedule_data *sch)
 
 		k_spin_unlock(&domain->lock, key);
 
+#ifdef CONFIG_SCHEDULE_LOG_CYCLE_STATISTICS
 		cycles1 = (uint32_t)platform_timer_get(timer_get());
 		dsp_load_check(task, cycles0, cycles1);
+#endif
 	}
 }
 

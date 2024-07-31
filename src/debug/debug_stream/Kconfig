@@ -20,5 +20,29 @@ config SOF_DEBUG_STREAM_SLOT_NUMBER
 	  the slot with MEMORY_WIN_2_SIZE in soc/intel/intel_adsp/Kconfig,
 	  in Zephyr source tree.
 
+config SOF_DEBUG_STREAM_THREAD_INFO
+	bool "Enable Zephyr thread info reporting through Debug-Stream"
+	select INIT_STACKS
+	select THREAD_MONITOR
+	select THREAD_STACK_INFO
+	select THREAD_RUNTIME_STATS
+	help
+	  This activates Zephyr thread info reporting through
+	  Debug-Stream. Thread info reports some basic live data from
+	  the Zephyr threads, like stack usage high-water-mark and CPU
+	  usage. Please select THREAD_NAME=y for the thread names more
+	  than just hex numbers.
+
+if SOF_DEBUG_STREAM_THREAD_INFO
+
+config SOF_DEBUG_STREAM_THREAD_INFO_INTERVAL
+	int "Thread information collection interval in seconds"
+	default 2
+	range 1 10
+	help
+	  Decides how often thread info runs and checks execution cycle
+	  statistics and stack usage.
+
 endif
 
+endif

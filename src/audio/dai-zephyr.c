@@ -1464,7 +1464,7 @@ int dai_zephyr_multi_endpoint_copy(struct dai_data **dd, struct comp_dev *dev,
 	/* return if nothing to copy */
 	if (!frames) {
 #if CONFIG_DAI_VERBOSE_GLITCH_WARNINGS
-		comp_warn(dev, "dai_zephyr_multi_endpoint_copy(): nothing to copy");
+		//comp_warn(dev, "dai_zephyr_multi_endpoint_copy(): nothing to copy");
 #endif
 
 		for (i = 0; i < num_endpoints; i++) {
@@ -1678,7 +1678,7 @@ int dai_common_copy(struct dai_data *dd, struct comp_dev *dev, pcm_converter_fun
 	/* return if nothing to copy */
 	if (!copy_bytes) {
 #if CONFIG_DAI_VERBOSE_GLITCH_WARNINGS
-		comp_warn(dev, "dai_zephyr_copy(): nothing to copy");
+		//comp_warn(dev, "dai_zephyr_copy(): nothing to copy");
 #endif
 		dma_reload(dd->chan->dma->z_dev, dd->chan->index, 0, 0, 0);
 		return 0;

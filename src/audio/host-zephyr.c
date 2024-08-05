@@ -138,7 +138,7 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 
 	copy_bytes = host_get_copy_bytes_one_shot(hd);
 	if (!copy_bytes) {
-		comp_info(dev, "host_copy_one_shot(): no bytes to copy");
+		//comp_info(dev, "host_copy_one_shot(): no bytes to copy");
 		return ret;
 	}
 
@@ -208,7 +208,7 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 
 	copy_bytes = host_get_copy_bytes_one_shot(hd);
 	if (!copy_bytes) {
-		comp_info(dev, "host_copy_one_shot(): no bytes to copy");
+		//comp_info(dev, "host_copy_one_shot(): no bytes to copy");
 		return ret;
 	}
 
@@ -403,10 +403,10 @@ static uint32_t host_get_copy_bytes_normal(struct host_data *hd, struct comp_dev
 	if (!(hd->ipc_host.feature_mask & BIT(IPC4_COPIER_FAST_MODE)))
 		dma_copy_bytes = MIN(hd->period_bytes, dma_copy_bytes);
 
-	if (!dma_copy_bytes)
+	/*if (!dma_copy_bytes)
 		comp_info(dev, "no bytes to copy, available samples: %d, free_samples: %d",
 			  avail_samples, free_samples);
-
+	*/
 	/* dma_copy_bytes should be aligned to minimum possible chunk of
 	 * data to be copied by dma.
 	 *

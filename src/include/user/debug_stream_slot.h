@@ -91,6 +91,9 @@
 
 #include <stdint.h>
 
+// HACK: This should be in zephyr/soc/intel/intel_adsp/common/include/adsp_debug_window.h
+#define ADSP_DW_SLOT_DEBUG_STREAM 0x53523134
+
 /* Core specific section descriptor
  *
  * Section descriptor defines core ID, offset and size of the circular

@@ -44,7 +44,6 @@
 #include <version.h>
 #endif
 #include <sof/lib/ams.h>
-#include <ipc4/base-config.h>
 
 LOG_MODULE_REGISTER(init, CONFIG_SOF_LOG_LEVEL);
 
@@ -335,7 +334,6 @@ static int primary_core_init(int argc, char *argv[], struct sof *sof)
 	lp_sram_unpack();
 #endif
 
-	dummy_cold_function(1);
 	/* should not return, except with Zephyr */
 	return task_main_start(sof);
 }

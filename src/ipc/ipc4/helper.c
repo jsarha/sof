@@ -1177,3 +1177,9 @@ void ipc4_update_sink_format(struct sof_sink *sink,
 	sink_set_buffer_fmt(sink, fmt->interleaving_style);
 }
 EXPORT_SYMBOL(ipc4_update_buffer_format);
+
+__cold int dummy_cold_function(int a)
+{
+	return a + 1;
+}
+EXPORT_SYMBOL(dummy_cold_function);

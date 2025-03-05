@@ -40,4 +40,5 @@ struct sof_sink;
 void ipc4_update_sink_format(struct sof_sink *sink,
 			     const struct ipc4_audio_format *fmt);
 
+int dummy_cold_function(int a);
 #endif

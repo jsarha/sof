@@ -12,6 +12,7 @@
 #include <ipc4/pipeline.h>
 #include <ipc4/logging.h>
 #include <ipc/topology.h>
+#include <ipc/compress_params.h>
 #include <sof_versions.h>
 #include <sof/lib/cpu-clk-manager.h>
 #include <sof/lib/cpu.h>
@@ -63,6 +64,43 @@ __cold static uint32_t get_host_buffer_size(void)
 	sof_dma_put(dma_host);
 
 	return periods;
+}
+
+struct sof_ipc4_codec_info_data {
+	uint32_t count;
+	uint32_t items[32];
+} __packed __aligned(4);
+
+#define SET_CODEC_INFO_ITEM(codec, dir)	(((codec) & 0xff) | (((dir) & 0xff) << 16))
+
+static void get_codec_info(struct sof_tlv **tuple)
+{
+	struct sof_ipc4_codec_info_data codec_info = { 0 };
+
+#ifdef CONFIG_CADENCE_CODEC_AAC_DEC
+	codec_info.items[codec_info.count++] =
+		SET_CODEC_INFO_ITEM(SND_AUDIOCODEC_AAC, SOF_IPC_STREAM_PLAYBACK);
+#endif
+#ifdef CONFIG_CADENCE_CODEC_MP3_DEC
+	codec_info.items[codec_info.count++] =
+		SET_CODEC_INFO_ITEM(SND_AUDIOCODEC_MP3, SOF_IPC_STREAM_PLAYBACK);
+#endif
+#ifdef CONFIG_CADENCE_CODEC_MP3_ENC
+	codec_info.items[codec_info.count++] =
+		SET_CODEC_INFO_ITEM(SND_AUDIOCODEC_MP3, SOF_IPC_STREAM_CAPTURE);
+#endif
+#ifdef CONFIG_CADENCE_CODEC_VORBIS_DEC
+	codec_info.items[codec_info.count++] =
+		SET_CODEC_INFO_ITEM(SND_AUDIOCODEC_VORBIS, SOF_IPC_STREAM_PLAYBACK);
+#endif
+
+	if (!codec_info.count)
+		return;
+
+	tlv_value_set(*tuple, IPC4_FW_CODEC_INFO, sizeof(codec_info.count) +
+		      sizeof(codec_info.items[0]) * codec_info.count, &codec_info);
+
+	*tuple = tlv_next(*tuple);
 }
 
 __cold static int basefw_config(uint32_t *data_offset, char *data)
@@ -149,6 +187,8 @@ __cold static int basefw_config(uint32_t *data_offset, char *data)
 			     get_host_buffer_size());
 
 	tuple = tlv_next(tuple);
+
+	get_codec_info(&tuple);
 
 	/* add platform specific tuples */
 	basefw_vendor_fw_config(&plat_data_offset, (char *)tuple);

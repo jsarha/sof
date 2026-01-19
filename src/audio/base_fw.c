@@ -97,8 +97,28 @@ static void get_codec_info(struct sof_tlv **tuple)
 	if (!codec_info.count)
 		return;
 
-	tlv_value_set(*tuple, IPC4_FW_CODEC_INFO, sizeof(codec_info.count) +
+	tlv_value_set(*tuple, IPC4_SOF_CODEC_INFO, sizeof(codec_info.count) +
 		      sizeof(codec_info.items[0]) * codec_info.count, &codec_info);
+
+	*tuple = tlv_next(*tuple);
+}
+
+#define SOF_CONFIG_MEMBER_SIZE(struct_name)	(sizeof(struct sof_tlv) + \
+						 sizeof(struct struct_name))
+#define SOF_CONFIG_SIZE_MAX	(SOF_CONFIG_MEMBER_SIZE(sof_ipc4_codec_info_data))
+
+static void base_fw_sof_config(struct sof_tlv **tuple)
+{
+	char sof_config_data[SOF_CONFIG_SIZE_MAX] = { 0 };
+	struct sof_tlv *sof_config_tuple = (struct sof_tlv *)sof_config_data;
+	uint32_t sof_config_size;
+
+	get_codec_info(&sof_config_tuple);
+	sof_config_size = (uint32_t)((char *)sof_config_tuple - sof_config_data);
+	if (sof_config_size == 0)
+		return;
+
+	tlv_value_set(*tuple, IPC4_FW_SOF_INFO, sof_config_size, sof_config_data);
 
 	*tuple = tlv_next(*tuple);
 }
@@ -188,7 +208,7 @@ __cold static int basefw_config(uint32_t *data_offset, char *data)
 
 	tuple = tlv_next(tuple);
 
-	get_codec_info(&tuple);
+	base_fw_sof_config(&tuple);
 
 	/* add platform specific tuples */
 	basefw_vendor_fw_config(&plat_data_offset, (char *)tuple);

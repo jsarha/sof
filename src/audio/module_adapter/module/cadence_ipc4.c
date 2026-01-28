@@ -462,6 +462,11 @@ static int cadence_codec_process(struct processing_module *mod, struct sof_sourc
 		return ret;
 	}
 
+	if (codec->mpd.produced == 0) {
+		comp_err(dev, "[peter] Nothing is produced from %u", codec->mpd.consumed);
+		audio_buffer_set_eos(sof_audio_buffer_from_source(sources[0]));
+		audio_buffer_set_eos(sof_audio_buffer_from_sink(sinks[0]));
+	}
 	/* do not proceed if not enough free space left */
 	if (out_space < codec->mpd.produced) {
 		source_release_data(sources[0], 0);

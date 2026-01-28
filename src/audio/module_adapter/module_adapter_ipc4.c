@@ -83,10 +83,10 @@ int module_ext_init_decode(const struct comp_driver *drv, struct module_ext_init
 		case IPC4_MOD_INIT_DATA_ID_MODULE_DATA:
 		{
 			/* set the module init_data */
-			dst->init_data = (const void *)(obj + 1);
-			dst->avail = true;
-			dst->size = obj->object_words * sizeof(uint32_t);
-			comp_info(dev, "module init data size %u bytes", dst->size);
+			ext_data->init_data = (const void *)(obj + 1);
+			ext_data->init_data_size = obj->object_words * sizeof(uint32_t);
+			comp_cl_info(drv, "module init data size %u bytes",
+				     ext_data->init_data_size);
 			break;
 		}
 		default:
@@ -158,6 +158,10 @@ int module_adapter_init_data(struct comp_dev *dev,
 
 	if (!config->ipc_extended_init) {
 		dst->init_data = cfg; /* legacy API */
+		dst->avail = true;
+	} else if (dst->ext_data && dst->ext_data->init_data) {
+		dst->init_data = dst->ext_data->init_data;
+		dst->size = dst->ext_data->init_data_size;
 		dst->avail = true;
 	}
 

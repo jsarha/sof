@@ -231,6 +231,7 @@ static void interim_heap_init(struct vregion *vr)
 	interim_base = UINT_TO_POINTER(ALIGN_UP(POINTER_TO_UINT(vr->lifetime.ptr),
 						CONFIG_DCACHE_LINE_SIZE));
 	interim_size = (vr->base + vr->size) - interim_base;
+
 	/*
 	 * Calling k_heap_init() with too small size causes an assert
 	 * failure. Exact limit is hard to deduce from sys_heap_init()

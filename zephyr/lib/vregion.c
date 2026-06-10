@@ -271,14 +271,12 @@ void vregion_set_interim(struct vregion *vr)
 /**
  * @brief Allocate memory with alignment from the virtual region dynamic heap.
  *
- * @param[in] vr Pointer to the virtual region instance.
  * @param[in] heap Pointer to the heap to use.
  * @param[in] size Size of the allocation.
  * @param[in] align Alignment of the allocation.
  * @return void* Pointer to the allocated memory, or NULL on failure.
  */
-static void *interim_alloc(struct vregion *vr, struct interim_heap *heap,
-			   size_t size, size_t align)
+static void *interim_alloc(struct interim_heap *heap, size_t size, size_t align)
 {
 	void *ptr;
 
@@ -307,15 +305,13 @@ static void interim_free(struct interim_heap *heap, void *ptr)
  * If the interim heap has already been created (i.e., an interim allocation
  * was made), log a warning and fall back to interim allocation.
  *
- * @param[in] vr Pointer to the virtual region instance.
  * @param[in] heap Pointer to the linear heap to use.
  * @param[in] size Size of the allocation.
  * @param[in] align Alignment of the allocation.
  *
  * @return void* Pointer to the allocated memory, or NULL on failure.
  */
-static void *lifetime_alloc(struct vregion *vr, struct vlinear_heap *heap,
-			    size_t size, size_t align)
+static void *lifetime_alloc(struct vlinear_heap *heap, size_t size, size_t align)
 {
 	void *ptr;
 	uint8_t *aligned_ptr;
@@ -416,10 +412,10 @@ void *vregion_alloc_align(struct vregion *vr, size_t size, size_t alignment)
 
 	switch (vr->type) {
 	case VREGION_MEM_TYPE_INTERIM:
-		p = interim_alloc(vr, &vr->interim, size, alignment);
+		p = interim_alloc(&vr->interim, size, alignment);
 		break;
 	case VREGION_MEM_TYPE_LIFETIME:
-		p = lifetime_alloc(vr, &vr->lifetime, size, alignment);
+		p = lifetime_alloc(&vr->lifetime, size, alignment);
 		break;
 	default:
 		LOG_ERR("error: invalid memory type %d", vr->type);
